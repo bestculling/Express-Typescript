@@ -1,0 +1,6 @@
+export default {
+    port: 8000,
+    host: "localhost",
+    dbUri: "mongodb://localhost:27017/touchmylike_backend",
+    saltWorkFactor: 10,
+}
