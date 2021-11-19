@@ -2,7 +2,13 @@ import config from "config";
 import { get } from "lodash";
 import { Request, Response } from "express";
 import { validatePassword } from "../service/user.service";
-import { createSession, createAccessToken } from "../service/session.service";
+import {
+    createSession,
+    createAccessToken,
+    updateSession,
+    findSessions,
+} from "../service/session.service";
+import { sign } from "../utils/jwt.utils";
 
 export async function createUserSessionHandler(req: Request, res: Response) {
     // validate the email and password
@@ -16,11 +22,38 @@ export async function createUserSessionHandler(req: Request, res: Response) {
     const session = await createSession(user._id, req.get("user-agent") || "");
 
     // create access token
+    // eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2MTk2YjY4NWNhOWNkMzBkNzA5NWIyNTYiLCJlbWFpbCI6ImFkbWluNDA0QGdtYWlsLmNvbSIsIm5hbWUiOiJhZG1pbjQwNCIsImNyZWF0ZWRBdCI6IjIwMjEtMTEtMThUMjA6MjQ6MzcuNTEwWiIsInVwZGF0ZWRBdCI6IjIwMjEtMTEtMThUMjA6MjQ6MzcuNTEwWiIsIl9fdiI6MCwic2Vzc2lvbiI6IjYxOTc2M2ViZGNkOWIzZTAzNWExZmFhMSIsImlhdCI6MTYzNzMxMTQ2NywiZXhwIjoxNjM3MzEyMzY3fQ.zN0bBfRz58NKrUSpQj5dXA7oJntT8XBN5rLZ46Bm5gw
     const accessToken = createAccessToken({
         user,
         session,
     });
 
-    console.log(session)
+    // create refresh token
+    const refreshToken = sign(session, {
+        expiresIn: config.get("refreshTokenTtl"), // 1 year
+    });
 
+    // send refresh & access token back
+    return res.send({ accessToken, refreshToken });
+
+}
+
+export async function invalidateUserSessionHandler(
+    req: Request,
+    res: Response
+) {
+    const sessionId = get(req, "user.session");
+
+    await updateSession({ _id: sessionId }, { valid: false });
+
+    return res.sendStatus(200);
+}
+
+export async function getUserSessionsHandler(req: Request, res: Response) {
+    const userId = get(req, "user._id");
+
+    console.log("userId", userId)
+    const sessions = await findSessions({ user: userId, valid: true });
+
+    return res.send(sessions);
 }

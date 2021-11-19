@@ -20,10 +20,9 @@ export function createAccessToken({
     | Omit<UserDocument, "password">
     | LeanDocument<Omit<UserDocument, "password">>;
     session:
-    | Omit<SessionDocument, "password">
-    | LeanDocument<Omit<SessionDocument, "password">>;
+    any;
 }) {
-    // Build and return the new access token
+    // Build and return the new access tok en
     const accessToken = sign(
         { ...user, session: session._id },
         { expiresIn: config.get("accessTokenTtl") } // 15 minutes
